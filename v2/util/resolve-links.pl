@@ -16,8 +16,8 @@ my ($out, $outfile) = tempfile("mdXXXXXXX", TMPDIR => 1);
 
 my $c = 0;
 while (<$in>) {
-    $c += s! (\s) (balancer|ssl_certificate|ssl_session_(?:fetch|store))_by_lua\* ( [\s,.:;?] )
-           !$1\[${2}_by_lua*](https://github.com/openresty/lua-nginx-module#${2}_by_lua_block)$3!xgs;
+    $c += s! (\s) (balancer|ssl_certificate|ssl_session_(?:fetch|store))_by_lua(_block|\*) ( [\s,.:;?] )
+           !$1\[${2}_by_lua${3}](https://github.com/openresty/lua-nginx-module#${2}_by_lua_block)$4!xgs;
 
     $c += s! (\s) set_(md5|quote_pgsql_str) ( [\s,.:;?] )
            !$1\[set_$2](https://github.com/openresty/set-misc-nginx-module#set_$2)$3!xgs;
@@ -33,6 +33,8 @@ while (<$in>) {
            !xegs;
 
     $c += s! (\s) ngx_devel_kit ( [\s,.:;?] ) !$1\[ngx_devel_kit](https://github.com/simpl/ngx_devel_kit#readme)$2!xgs;
+
+    $c += s! (\s) ngx_coolkit ( [\s,.:;?] ) !$1\[ngx_coolkit](https://github.com/FRiCKLE/ngx_coolkit)$2!xgs;
 
     $c += s! (\s) ngx_postgres ( [\s,.:;?] ) !$1\[ngx_postgres](https://github.com/openresty/ngx_postgres#readme)$2!xgs;
 
@@ -67,7 +69,7 @@ while (<$in>) {
                             | redirect
                             | get_phase
                             )
-                  | tcpsock:(?:sslhandshake|setkeepalive|connect|settimeout|settimeouts)
+                  | tcpsock:(?:sslhandshake|setkeepalive|connect|settimeout|settimeouts|receiveany)
                   | lua_ssl_verify_depth
                   | lua_regex_cache_max_entries
                   | lua_intercept_error_log
@@ -75,6 +77,7 @@ while (<$in>) {
                   | lua_ssl_trusted_certificate
                   | lua_check_client_abort
                   | lua_shared_dict
+                  | lua_sa_restart
                    ) ( (?: \( [^)]* \) )? ) ( [\s,.:;?)(] ) !
             my ($pre, $txt, $parens, $post) = ($1, $2, $3, $4);
             my $anchor = gen_anchor($txt);
@@ -161,8 +164,8 @@ close $in;
 
 if ($c) {
     warn "$c edits.\n";
-    move($outfile, $infile)
-        or die "Cannot move $outfile to $infile: $!\n";
+    #move($outfile, $infile)
+    #    or die "Cannot move $outfile to $infile: $!\n";
 }
 
 sub gen_anchor {
